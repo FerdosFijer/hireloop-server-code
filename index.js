@@ -22,6 +22,15 @@ async function run() {
     const db = client.db("hireloop_db");
     const jobcollection = db.collection("jobs");
     const companyCollection = db.collection("companies");
+    const usersCollection = db.collection("user");
+
+      /*  --------- uer related apis---------- */
+    
+    app.get('/api/user', async (req, res) => {
+      const cursor = usersCollection.find().skip(2);
+      const result = await cursor.toArray();
+      res.send(result);
+    })
 
        /* -------- Job related apis---------- */    
 
@@ -48,24 +57,21 @@ async function run() {
 
        /* -------- company related apis ---------- */
 
-    app.get('/api/my/companies', async (req, res) => {
-  try {
-    const query = {};
+    app.get('/api/companies', async (req, res) =>{
+      const cursor = companyCollection.find().skip(1);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
 
+    app.get('/api/my/companies', async (req, res) => {
+    const query = {};
     if (req.query.recruiterId) {
       query.recruiterId = req.query.recruiterId;
     }
-
     const result = await companyCollection.findOne(query);
-
-    res.status(200).json(result || null);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      message: "Failed to fetch company"
+    res.send(result || {});
     });
-  }
-});
+
     app.post('/api/companies', async (req, res)=>{
         const company = req.body;
         const newcompany ={
