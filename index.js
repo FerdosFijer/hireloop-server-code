@@ -38,23 +38,41 @@ async function run() {
     })
     app.post('/api/jobs', async (req, res)=>{
         const job = req.body;
-        const result = await jobcollection.insertOne(job);     
+        const newJob ={
+          ...job,
+          createdAt: new Date()
+        }
+        const result = await jobcollection.insertOne(newJob);     
         res.send(result)                                                                                                                                                                      
     } )
 
        /* -------- company related apis ---------- */
 
-    app.get('/api/my/companies', async (req, res) =>{
-      const query ={};
-      if (req.query.recruiterId){
-        query.recruiterId = req.query.recruiterId;}
-      const result = await companyCollection.findOne(query);
-      res.send(result)
-    })
+    app.get('/api/my/companies', async (req, res) => {
+  try {
+    const query = {};
 
+    if (req.query.recruiterId) {
+      query.recruiterId = req.query.recruiterId;
+    }
+
+    const result = await companyCollection.findOne(query);
+
+    res.status(200).json(result || null);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to fetch company"
+    });
+  }
+});
     app.post('/api/companies', async (req, res)=>{
         const company = req.body;
-        const result = await companyCollection.insertOne(company);     
+        const newcompany ={
+          ...company,
+          createdAt: new Date()
+        }
+        const result = await companyCollection.insertOne(newcompany);     
         res.send(result)                                                                                                                                                                      
     } )
 
