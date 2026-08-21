@@ -23,74 +23,131 @@ async function run() {
     const jobcollection = db.collection("jobs");
     const companyCollection = db.collection("companies");
     const usersCollection = db.collection("user");
+    const applicationCollection = db.collection("applications")
+    const planCollection = db.collection("plans")
+    const subscriptionCollection = db.collection('subscriptions')
 
-      /*  --------- uer related apis---------- */
-    
+    /*  --------- uer related apis---------- */
+
     app.get('/api/user', async (req, res) => {
       const cursor = usersCollection.find().skip(2);
       const result = await cursor.toArray();
       res.send(result);
     })
 
-       /* -------- Job related apis---------- */    
+    /* -------- Job related apis---------- */
 
-    app.get("/api/jobs", async (req, res) =>{
-        const query = {};
-        if(req.query.companyId){
-            query.companyId = req.query.companyId;
-        }
-        if(req.query.status){
-            query.status= req.query.status;
-        }
-        const result = await jobcollection.find(query).toArray();
-        res.json(result); 
+    app.get("/api/jobs", async (req, res) => {
+      const query = {};
+      if (req.query.companyId) {
+        query.companyId = req.query.companyId;
+      }
+      if (req.query.status) {
+        query.status = req.query.status;
+      }
+      const result = await jobcollection.find(query).toArray();
+      res.json(result);
     })
 
-    app.get("/api/jobs/:id", async (req, res) =>{
-        const id = req.params.id;
-        const query = {_id: new ObjectId(id)}
-        const result = await jobcollection.findOne(query);
-        res.json(result); 
+    app.get("/api/jobs/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await jobcollection.findOne(query);
+      res.json(result);
     })
 
-    app.post('/api/jobs', async (req, res)=>{
-        const job = req.body;
-        const newJob ={
-          ...job,
-          createdAt: new Date()
-        }
-        const result = await jobcollection.insertOne(newJob);     
-        res.send(result)                                                                                                                                                                      
-    } )
+    app.post('/api/jobs', async (req, res) => {
+      const job = req.body;
+      const newJob = {
+        ...job,
+        createdAt: new Date()
+      }
+      const result = await jobcollection.insertOne(newJob);
+      res.send(result)
+    })
+    /* -------- Application related apis ---------- */
 
-       /* -------- company related apis ---------- */
+    app.get('/api/applications', async (req, res) => {
+      const query = {};
+      if (req.query.applicantId) {
+        query.applicantId = req.query.applicantId;
+      }
+      if (req.query.jobId) {
+        query.jobId = req.query.jobId;
+      }
+      const cursor = applicationCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
+    })
 
-    app.get('/api/companies', async (req, res) =>{
+    app.post('/api/applications', async (req, res) => {
+      const application = req.body;
+      const newApplication = {
+        ...application,
+        createdAt: new Date()
+      }
+      const result = await applicationCollection.insertOne(newApplication);
+      res.send(result)
+    })
+
+    /* -------- company related apis ---------- */
+
+    app.get('/api/companies', async (req, res) => {
       const cursor = companyCollection.find().skip(1);
       const result = await cursor.toArray();
       res.send(result);
     });
 
     app.get('/api/my/companies', async (req, res) => {
-    const query = {};
-    if (req.query.recruiterId) {
-      query.recruiterId = req.query.recruiterId;
-    }
-    const result = await companyCollection.findOne(query);
-    res.send(result || {});
+      const query = {};
+      if (req.query.recruiterId) {
+        query.recruiterId = req.query.recruiterId;
+      }
+      const result = await companyCollection.findOne(query);
+      res.send(result || {});
     });
 
-    app.post('/api/companies', async (req, res)=>{
-        const company = req.body;
-        const newcompany ={
-          ...company,
-          createdAt: new Date()
-        }
-        const result = await companyCollection.insertOne(newcompany);     
-        res.send(result)                                                                                                                                                                      
-    } )
+    app.post('/api/companies', async (req, res) => {
+      const company = req.body;
+      const newcompany = {
+        ...company,
+        createdAt: new Date()
+      }
+      const result = await companyCollection.insertOne(newcompany);
+      res.send(result)
+    })
+    /* --------- plans related Apis ----------- */
 
+    app.get('/api/plans', async (req, res) => {
+      const query = {}
+      if (req.query.plan_id) {
+        query.id = req.query.plan_id
+      }
+      const plan = await planCollection.findOne(query);
+      res.send(plan);
+    })
+    /* --------- subscriptionCollection related Apis ----------- */
 
+    app.post('/api/subscriptions', async (req, res) => {
+      const data = req.body;
+      const subsInfo = {
+        ...data,
+        createdAt: new Date()
+      }
+      const result = await subscriptionCollection.insertOne(subsInfo);
+
+      // update the user plan information
+      const filter = { email: data.email };
+      // update the value of the 'quantity' field to 5
+      const updateDocument = {
+        $set: {
+          plan: data.planId,
+        },
+      };
+
+      const updateResult = await usersCollection.updateOne(filter, updateDocument);
+      res.send(updateResult)
+    })
 
 
     await client.db("admin").command({ ping: 1 });
