@@ -97,7 +97,7 @@ async function run() {
     //   const result = await cursor.toArray();
     //   res.send(result);
     // });
-    //! companies skip one manually
+    //! companies skip one manually and font end a for of diyei data dekassi fontend e
     app.get('/api/companies', async (req, res) => {
       const cursor = companyCollection.find().skip(1)
       const companies = await cursor.toArray();
@@ -110,17 +110,51 @@ async function run() {
       }
       res.send(companies);
     });
-    //! companies skip two by mongodb aggregate pipelline
+
+    /* skip start here  */
+
+    //! companies skip two by mongodb aggregate pipelline diye kora jay but font end a kichu korini next 13 lines
     app.get('/api/companies2', async (req, res) => {
       const pipeline= [
         {
           $skip: 2
+        },
+        {
+          $limit: 2
         }
       ]
       const cursor = companyCollection.aggregate(pipeline);
       const result = await cursor.toArray();
       res.send(result);
     });
+    //! jobs mongodb aggregate pipelline siklam and data pawa siklam but font end e use korbo na next 25 ta lines
+    app.get('/api/job2', async (req, res) => {
+      const pipeline= [
+        {
+          $group: {
+            _id: '$type',
+            count:{
+              $sum:1
+            }
+          }
+        },
+        {
+          $project:{
+            jobType: '$_id',
+            count:1,
+            _id:0
+          }
+        },
+        {
+          $sort: { count: -1}
+        }
+      ]
+      const cursor = jobcollection.aggregate(pipeline);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    /* skip finish here  */
 
     app.get('/api/my/companies', async (req, res) => {
       const query = {};
