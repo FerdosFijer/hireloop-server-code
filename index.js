@@ -116,6 +116,20 @@ async function run() {
       const result = await companyCollection.insertOne(newcompany);
       res.send(result)
     })
+
+    app.patch('/api/companies/:id', async (req, res) => {
+      const id = req.params.id;
+      const updatedCompany = req.body; 
+      const filter = {_id : new ObjectId(id)}; 
+      const updateDocument = {
+        $set: {
+          status: updatedCompany.status
+        },
+      };
+      const result = await companyCollection.updateOne(filter, updateDocument)
+      res.send(result)
+    })
+
     /* --------- plans related Apis ----------- */
 
     app.get('/api/plans', async (req, res) => {
@@ -135,10 +149,7 @@ async function run() {
         createdAt: new Date()
       }
       const result = await subscriptionCollection.insertOne(subsInfo);
-
-      // update the user plan information
       const filter = { email: data.email };
-      // update the value of the 'quantity' field to 5
       const updateDocument = {
         $set: {
           plan: data.planId,
