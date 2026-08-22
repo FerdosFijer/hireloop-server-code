@@ -92,8 +92,32 @@ async function run() {
 
     /* -------- company related apis ---------- */
 
+    // app.get('/api/companies', async (req, res) => {
+    //   const cursor = companyCollection.find().skip(1);
+    //   const result = await cursor.toArray();
+    //   res.send(result);
+    // });
+    //! companies skip one manually
     app.get('/api/companies', async (req, res) => {
-      const cursor = companyCollection.find().skip(1);
+      const cursor = companyCollection.find().skip(1)
+      const companies = await cursor.toArray();
+      for (const company of companies){
+        const filter ={
+          companyId: company._id.toString()
+        }
+        const jobCount = await jobcollection.countDocuments(filter)
+        company.jobCount = jobCount
+      }
+      res.send(companies);
+    });
+    //! companies skip two by mongodb aggregate pipelline
+    app.get('/api/companies2', async (req, res) => {
+      const pipeline= [
+        {
+          $skip: 2
+        }
+      ]
+      const cursor = companyCollection.aggregate(pipeline);
       const result = await cursor.toArray();
       res.send(result);
     });
