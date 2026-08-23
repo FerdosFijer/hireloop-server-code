@@ -8,6 +8,13 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 app.use(cors())
 app.use(express.json())
+
+const logger = (req, res, next) => {
+  console.log('logger middleware logged', req.params);
+  next();
+}
+
+
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -26,14 +33,55 @@ async function run() {
     const applicationCollection = db.collection("applications")
     const planCollection = db.collection("plans")
     const subscriptionCollection = db.collection('subscriptions')
+    const sessionCollection = db.collection('session')
+
+    /* ----varification related-------- */
+    const verifyToken = async (req, res, next) => {
+      console.log('headers', req.headers);
+      const authHeader = req?.headers?.authorization
+      if (!authHeader) {
+        return res.status(401).send({ message: 'unauthorized access' })
+      }
+      const token = authHeader.split(' ')[1]
+      if (!token) {
+        return res.status(401).send({ message: 'unauthorized access' })
+      }
+      const query = { token: token }
+      const session = await sessionCollection.findOne(query);
+      if (!session) {
+        return res.status(401).send({ message: 'unauthorized access' })
+      }
+      const userId = session.userId;
+      const userQuery = { _id: userId }
+      const user = await usersCollection.findOne(userQuery)
+      if (!user) {
+        return res.status(401).send({ message: 'unauthorized access' })
+      }
+      req.user = user;
+      next();
+    }
+
+    const verifySeeker = async (req, res, next) => {
+      if (req.user?.role !== 'seeker') {
+        return res.status(403).send({ message: 'forbidden access' })
+      }
+      next();
+    }
+    const verifyRecruiter = async (req, res, next) => {
+      if (req.user?.role !== 'recruiter') {
+        return res.status(403).send({ message: 'forbidden access' })
+      }
+      next();
+    }
+    const verifyAdmin = async (req, res, next) => {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).send({ message: 'forbidden access' })
+      }
+      next();
+    }
 
     /*  --------- uer related apis---------- */
 
-    app.get('/api/user', async (req, res) => {
-      const cursor = usersCollection.find().skip(2);
-      const result = await cursor.toArray();
-      res.send(result);
-    })
 
     /* -------- Job related apis---------- */
 
@@ -67,10 +115,16 @@ async function run() {
     })
     /* -------- Application related apis ---------- */
 
-    app.get('/api/applications', async (req, res) => {
+    app.get('/api/applications', verifyToken, verifySeeker, async (req, res) => {
       const query = {};
       if (req.query.applicantId) {
         query.applicantId = req.query.applicantId;
+
+        //check whether asking for user information or someone lese
+        console.log(req.user, req.query.applicantId);
+        if (req.user._id.toString() !== req.query.applicantId) {
+          return res.status(403).send({ message: 'forbidden access' })
+        }
       }
       if (req.query.jobId) {
         query.jobId = req.query.jobId;
@@ -98,11 +152,11 @@ async function run() {
     //   res.send(result);
     // });
     //! companies skip one manually and font end a for of diyei data dekassi fontend e
-    app.get('/api/companies', async (req, res) => {
+    app.get('/api/companies', verifyToken, async (req, res) => {
       const cursor = companyCollection.find().skip(1)
       const companies = await cursor.toArray();
-      for (const company of companies){
-        const filter ={
+      for (const company of companies) {
+        const filter = {
           companyId: company._id.toString()
         }
         const jobCount = await jobcollection.countDocuments(filter)
@@ -115,7 +169,7 @@ async function run() {
 
     //! companies skip two by mongodb aggregate pipelline diye kora jay but font end a kichu korini next 13 lines
     app.get('/api/companies2', async (req, res) => {
-      const pipeline= [
+      const pipeline = [
         {
           $skip: 2
         },
@@ -129,24 +183,24 @@ async function run() {
     });
     //! jobs mongodb aggregate pipelline siklam and data pawa siklam but font end e use korbo na next 25 ta lines
     app.get('/api/job2', async (req, res) => {
-      const pipeline= [
+      const pipeline = [
         {
           $group: {
             _id: '$type',
-            count:{
-              $sum:1
+            count: {
+              $sum: 1
             }
           }
         },
         {
-          $project:{
+          $project: {
             jobType: '$_id',
-            count:1,
-            _id:0
+            count: 1,
+            _id: 0
           }
         },
         {
-          $sort: { count: -1}
+          $sort: { count: -1 }
         }
       ]
       const cursor = jobcollection.aggregate(pipeline);
@@ -175,10 +229,10 @@ async function run() {
       res.send(result)
     })
 
-    app.patch('/api/companies/:id', async (req, res) => {
+    app.patch('/api/companies/:id', logger, verifyToken,verifyAdmin, async (req, res) => {
       const id = req.params.id;
-      const updatedCompany = req.body; 
-      const filter = {_id : new ObjectId(id)}; 
+      const updatedCompany = req.body;
+      const filter = { _id: new ObjectId(id) };
       const updateDocument = {
         $set: {
           status: updatedCompany.status
@@ -189,7 +243,6 @@ async function run() {
     })
 
     /* --------- plans related Apis ----------- */
-
     app.get('/api/plans', async (req, res) => {
       const query = {}
       if (req.query.plan_id) {
