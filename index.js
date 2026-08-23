@@ -92,6 +92,26 @@ async function run() {
 
     app.get("/api/jobs", async (req, res) => {
       const query = {};
+      console.log("Fijer query", req.query);
+      
+      // job filter related query
+      if (req.query.search) {
+        query.$or = [
+          { title: { $regex: req.query.search, $options: 'i' } },
+          { companyName: { $regex: req.query.search, $options: 'i' } },
+        ]
+      }
+      if (req.query.type) {
+        query.type = req.query.type;
+      }
+      if (req.query.category) {
+        query.category = req.query.category;
+      }
+      if (req.query.isRemote) {
+        query.isRemote = req.query.isRemote;
+      }
+      
+      //company related query
       if (req.query.companyId) {
         query.companyId = req.query.companyId;
       }
