@@ -82,6 +82,11 @@ async function run() {
 
     /*  --------- uer related apis---------- */
 
+    /* app.get('/api/user', async (req, res) => {
+      const cursor = usersCollection.find().skip(2);
+      const result = await cursor.toArray();
+      res.send(result);
+    }) */
 
     /* -------- Job related apis---------- */
 
