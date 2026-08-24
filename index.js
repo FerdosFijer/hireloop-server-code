@@ -23,9 +23,12 @@ const client = new MongoClient(uri, {
   }
 });
 
-async function run() {
-  try {
+// async function run() {
+//   try {
     // await client.connect();
+
+client.connect(() => {'connecting to Mongo db'}).catch(console.dir);
+
     const db = client.db("hireloop_db");
     const jobcollection = db.collection("jobs");
     const companyCollection = db.collection("companies");
@@ -309,12 +312,12 @@ async function run() {
 
 
     // await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  } finally {
+  //   console.log("Pinged your deployment. You successfully connected to MongoDB!");
+  // } finally {
     // await client.close();
-  }
-}
-run().catch(console.dir);
+//   }
+// }
+// run().catch(console.dir);
 
 app.get('/', (req, res) => {
   res.send('Hello World!')
